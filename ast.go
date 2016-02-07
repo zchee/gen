@@ -145,7 +145,7 @@ func (fa *ASTFunc) generateParameters() []ast.Expr {
 		if p.Type.IsSlice && !p.Type.IsReturnArgument {
 			hasDeclaration = true
 
-			fa.addGoToCSliceConversion(p.Name, p.Type)
+			fa.addCArrayFromGoSlice(p.Name, p.CName, p.Type)
 		} else if p.Type.IsReturnArgument {
 			if p.Type.LengthOfSlice == "" {
 				// Add the return type to the function return arguments
@@ -647,6 +647,37 @@ func (fa *ASTFunc) addCToGoSliceConversion(name string, cname string, lengthOfSl
 						Name: cname,
 					},
 				),
+			),
+		},
+	})
+}
+
+func (fa *ASTFunc) addCArrayFromGoSlice(name string, cname string, typ Type) {
+	sliceType := getSliceType(typ)
+
+	fa.addAssignment("gos_"+name, &ast.CallExpr{
+		Fun: &ast.ParenExpr{
+			X: doPointer(accessMember("reflect", "SliceHeader")),
+		},
+		Args: []ast.Expr{
+			doCall(
+				"unsafe",
+				"Pointer",
+				doReference(&ast.Ident{
+					Name: name,
+				}),
+			),
+		},
+	})
+	fa.addAssignment("cp_"+name, &ast.CallExpr{
+		Fun: &ast.ParenExpr{
+			X: doPointer(sliceType),
+		},
+		Args: []ast.Expr{
+			doCall(
+				"unsafe",
+				"Pointer",
+				accessMember("gos_"+name, "Data"),
 			),
 		},
 	})

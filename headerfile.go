@@ -50,6 +50,7 @@ func (h *HeaderFile) addMethod(f *Function, fname string, fnamePrefix string, rt
 }
 
 func (h *HeaderFile) addBasicMethods(f *Function, fname string, fnamePrefix string, rt Receiver) bool {
+
 	if len(f.Parameters) == 0 && h.IsEnumOrStruct(f.ReturnType.GoName) {
 		rtc := rt
 		rtc.Type = f.ReturnType
@@ -69,7 +70,7 @@ func (h *HeaderFile) addBasicMethods(f *Function, fname string, fnamePrefix stri
 
 		return h.addMethod(f, fname, fnamePrefix, rt)
 	} else if len(f.Parameters) == 1 && h.IsEnumOrStruct(f.Parameters[0].Type.GoName) && strings.HasPrefix(fname, "dispose") && f.ReturnType.GoName == "void" {
-		fname = "Dispose"
+		fname = "Dispose"	
 
 		return h.addMethod(f, fname, fnamePrefix, rt)
 	} else if len(f.Parameters) == 2 && strings.HasPrefix(fname, "equal") && h.IsEnumOrStruct(f.Parameters[0].Type.GoName) && f.Parameters[0].Type == f.Parameters[1].Type {
