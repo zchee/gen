@@ -10,7 +10,7 @@ export LLVM_VERSION=$1
 cd clang/ || exit
 
 rm -rf clang-c/
-rm *_gen.go
+rm -f *_gen.go
 
 go-clang-gen || exit
 
