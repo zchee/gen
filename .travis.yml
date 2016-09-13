@@ -1,45 +1,27 @@
-language: go
-go:
-  - 1.5
+sudo: false
+services: docker
+# undocumented minimum language set
+language: generic
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise-3.4
-    packages:
-      - llvm-3.4
-      - clang-3.4
-      - libclang1-3.4
-      - libclang-3.4-dev
-
+before_install:
+  - sudo service docker stop; if [ "$(ls -A /home/travis/docker)" ]; then echo "/home/travis/docker already set"; else sudo mv /var/lib/docker /home/travis/docker; fi
+  - sudo bash -c "echo 'DOCKER_OPTS=\"-H tcp://127.0.0.1:2375 -H unix:///var/run/docker.sock -g /home/travis/docker\"' > /etc/default/docker"; sudo service docker start
 install:
-  - mkdir -p /home/travis/bin
-  - sudo ln -s /usr/bin/llvm-config-3.4 /home/travis/bin/llvm-config
-  - sudo ln -s /usr/lib/llvm-3.4/lib/libclang.so.1 /usr/lib/x86_64-linux-gnu/libclang.so
-  - sudo ldconfig
-
-  - llvm-config --version
-  - llvm-config --includedir
-  - llvm-config --libdir
-
-  - make install-dependencies
-  - make install-tools
-
-  - CGO_LDFLAGS="-L`llvm-config --libdir`" go get -u github.com/go-clang/bootstrap/...
-
+  - docker build --rm -f docker/base/Dockerfile -t goclang/base .
+  - make docker-build
 script:
-  # Install the project
-  - make install
-
-  # Linting
-  - make lint
-
-  # Do tests and code coverage
-  - ginkgo -r -cover -skipPackage="testdata"
-  - gover
-  - if [ "$TRAVIS_SECURE_ENV_VARS" = "true" ]; then goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN; fi
+  - make docker-test
+  - ls -la gover.coverprofile # - if [ "$TRAVIS_SECURE_ENV_VARS" = "true" ]; then goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN; fi
+before_cache:
+  - sudo service docker stop; sudo chown -R travis ~/docker
+cache:
+  directories:
+    ~/docker
 
 env:
-  # Coveralls.io
-  secure: "pMyHrYdVIexMTlzQJj9lH6OJWEOSjeAg1qlq2BWndzTZgQ7etsokg3B6z7Lafpyt9bMFPt6ZIMwmSe5K4wa9UiGvroadjlHqNwl298Xa5P3ixbZYMtCNWHMz4y/FluzZPNOSKMpdXUcqF+pOPlmaxEh8Me3vvGTaQcNGXiqC1h//FDJNrtuBNymOkTRV7Us5bnVgwgXOrwSdVoOe4MvLcTeCOYn/iXCSjI+bZDdx3t3M3os5l2dbgW1xWSPlYojnHK3etByHNwJyK+LzVOY0TCbQCyxRQwtURmI+f9Ljgws9lEPbv7GCINi2y9RWxNydRHlxmoS/fsj1aWAPtmsVIVZpHE9wrXeY3zcCeQ7tYC8qI7JFba/IWnqplq5Z6Y3y998d1JzoSF4FZc6f34rEfMZEZOdk2PwqUzosB9lBGw/n3hOC6meth3SkqhZfW7QC1vM8EvsvOxdXQpsDluTX8DOace50YM3HTiSYls2KpNwXxSzAqVu46CZiqsbkQHjAXa2fdgmJzFpgRaXU3Ln8GOU4aVDI+2wJCR/XBTDHl32jR3uHlAdLPLpYpALm9ZcgzzDXRDFq5zUnKhEgau1HIOLeKL6HdVGD1x5W+/FP8PTtblgLkCMTctOQt+49Go9fk6DqI4Rv95tbUAnF+NXU/Zd4TA1eroG/wpuRIj2/e/E="
+  matrix:
+    - LLVM_VERSION=3.9
+    - LLVM_VERSION=4.0
+  global:
+    # Coveralls.io
+    - secure: "pMyHrYdVIexMTlzQJj9lH6OJWEOSjeAg1qlq2BWndzTZgQ7etsokg3B6z7Lafpyt9bMFPt6ZIMwmSe5K4wa9UiGvroadjlHqNwl298Xa5P3ixbZYMtCNWHMz4y/FluzZPNOSKMpdXUcqF+pOPlmaxEh8Me3vvGTaQcNGXiqC1h//FDJNrtuBNymOkTRV7Us5bnVgwgXOrwSdVoOe4MvLcTeCOYn/iXCSjI+bZDdx3t3M3os5l2dbgW1xWSPlYojnHK3etByHNwJyK+LzVOY0TCbQCyxRQwtURmI+f9Ljgws9lEPbv7GCINi2y9RWxNydRHlxmoS/fsj1aWAPtmsVIVZpHE9wrXeY3zcCeQ7tYC8qI7JFba/IWnqplq5Z6Y3y998d1JzoSF4FZc6f34rEfMZEZOdk2PwqUzosB9lBGw/n3hOC6meth3SkqhZfW7QC1vM8EvsvOxdXQpsDluTX8DOace50YM3HTiSYls2KpNwXxSzAqVu46CZiqsbkQHjAXa2fdgmJzFpgRaXU3Ln8GOU4aVDI+2wJCR/XBTDHl32jR3uHlAdLPLpYpALm9ZcgzzDXRDFq5zUnKhEgau1HIOLeKL6HdVGD1x5W+/FP8PTtblgLkCMTctOQt+49Go9fk6DqI4Rv95tbUAnF+NXU/Zd4TA1eroG/wpuRIj2/e/E="

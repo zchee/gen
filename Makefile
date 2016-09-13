@@ -31,3 +31,20 @@ test:
 	CGO_LDFLAGS="-L`llvm-config --libdir`" go test -timeout 60s -race ./...
 test-verbose:
 	CGO_LDFLAGS="-L`llvm-config --libdir`" go test -timeout 60s -race -v ./...
+
+docker-build:
+	docker build --rm -f docker/Dockerfile -t goclang/gen --build-arg LLVM_VERSION=$(LLVM_VERSION) .
+docker-test:
+	docker run -it --rm -w /go/src/github.com/go-clang/gen -v $(shell pwd):/go/src/github.com/go-clang/gen goclang/gen make ci
+
+ci:
+	llvm-config --version
+	llvm-config --includedir
+	llvm-config --libdir
+	make install-dependencies
+	make install-tools
+	CGO_LDFLAGS="-L`llvm-config --libdir`" go get -u -v -x github.com/go-clang/bootstrap/...
+	make lint
+	ginkgo -r -cover -skipPackage="testdata"
+	gover
+	ls -la
