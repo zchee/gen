@@ -51,10 +51,16 @@ func Cmd(args []string, api *gen.API) error {
 	}
 
 	// Find Clang's include directory
-	for _, d := range []string{
+	includeDirectory := []string{
 		"/usr/local/lib/clang",
 		"/usr/include/clang",
-	} {
+	}
+	// When the first args has the "/clang" suffix, assumed user custom include directory.
+	if len(args) > 0 && strings.HasSuffix(args[0], "/clang") {
+		includeDirectory = append(includeDirectory, args[0])
+	}
+
+	for _, d := range includeDirectory {
 		for _, di := range []string{
 			d + fmt.Sprintf("/%s/include", llvmVersion.String()),
 			d + fmt.Sprintf("/%s/include", llvmVersion.StringMinor()),
