@@ -188,6 +188,8 @@ func typeFromClangType(cType clang.Type) (Type, error) {
 		typ.GoName = subTyp.GoName
 		typ.PointerLevel += subTyp.PointerLevel
 		typ.IsPrimitive = subTyp.IsPrimitive
+	case clang.Type_Invalid:
+		return Type{}, nil
 	default:
 		return Type{}, fmt.Errorf("unhandled type %q of kind %q", cType.Spelling(), cType.Kind().Spelling())
 	}
