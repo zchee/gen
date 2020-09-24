@@ -71,6 +71,8 @@ func (h *HeaderFile) prepareFile() error {
 	return nil
 }
 
+var idx int
+
 func (h *HeaderFile) handleFile(cursor clang.Cursor) {
 	/*
 		TODO mark the enum https://github.com/go-clang/gen/issues/40
@@ -90,6 +92,12 @@ func (h *HeaderFile) handleFile(cursor clang.Cursor) {
 
 		cname := cursor.Spelling()
 		cnameIsTypeDef := false
+
+		switch cname {
+		case "CXCompletionResult":
+			idx++
+			fmt.Printf("hit %s, count: %d\n", cname, idx)
+		}
 
 		if parentCName := parent.Spelling(); parent.Kind() == clang.Cursor_TypedefDecl && parentCName != "" {
 			cname = parentCName
@@ -172,6 +180,8 @@ func (h *HeaderFile) handleFile(cursor clang.Cursor) {
 
 		return clang.ChildVisit_Recurse
 	})
+
+	fmt.Printf("h.Filename: %s\nh: %#v\n", h.Filename, h)
 }
 
 func (h *HeaderFile) parse(clangArguments []string) error {

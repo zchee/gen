@@ -36,7 +36,7 @@ func (a *API) HandleDirectory(dir string) ([]*HeaderFile, error) {
 	var headerFiles []*HeaderFile
 
 	for _, hf := range headers {
-		if hf.IsDir() || !strings.HasSuffix(hf.Name(), ".h") {
+		if hf.IsDir() || !strings.HasSuffix(hf.Name(), ".h") || hf.Name() == "Index.h" || hf.Name() == "Documentation.h" {
 			continue
 		}
 
@@ -48,6 +48,12 @@ func (a *API) HandleDirectory(dir string) ([]*HeaderFile, error) {
 
 		headerFiles = append(headerFiles, h)
 	}
+
+	h := newHeaderFile(a, "Index.h", dir)
+	if err := h.parse(a.ClangArguments); err != nil {
+		return nil, fmt.Errorf("Cannot handle header file %q: %v", h.FullPath(), err)
+	}
+	headerFiles = append(headerFiles, h)
 
 	return headerFiles, nil
 }
